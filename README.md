@@ -131,6 +131,27 @@ Tip: DeepSeek-V3.2 is a great low-cost option to start with for everyday AI codi
 
 When Kaku Assistant has a suggestion ready after a command error, press `Cmd + Shift + E` to apply it.
 
+## SSH 管理功能：合理性与可实施性分析
+
+从当前代码结构看，为 Kaku 增加“SSH 管理”（例如主机配置、连接状态查看、会话入口）是合理且可实施的：
+
+- **已有基础能力**：仓库已包含 `crates/wezterm-ssh`、`ssh2`、`libssh-rs`、`lua-api-crates/ssh-funcs` 等依赖与模块，说明 SSH 协议层与 Lua API 侧能力已经存在。
+- **已有可观测信息**：`kaku cli list-clients` 已暴露 `SSH_AUTH_SOCK` 等连接上下文，具备做“连接管理视图”的数据基础。
+- **与产品定位一致**：Kaku 强调 AI coding + 多标签/多窗格工作流，SSH 管理可以降低远程开发与故障排查的切换成本，提升终端内一体化体验。
+- **工程落地路径清晰**：可先从低风险的“配置与只读管理”做起（SSH Host 列表、快速连接、状态展示），再逐步扩展到密钥辅助、跳板机、连接策略等高级能力。
+
+建议采用分阶段方案：
+
+1. **Phase 1（低风险）**：新增 SSH Host 配置入口（兼容 `~/.ssh/config`），在 CLI/TUI 提供连接与状态查看。
+2. **Phase 2（中风险）**：加入连接模板、常用主机收藏、失败诊断（网络/认证原因分类）。
+3. **Phase 3（高价值）**：与 Kaku Assistant 联动，基于错误日志给出安全修复建议（仅建议，不自动执行敏感命令）。
+
+需要重点控制的风险：
+
+- **安全性**：禁止明文存储私钥或口令；仅复用系统 `ssh-agent`/`SSH_AUTH_SOCK`；对日志和 UI 输出做脱敏。
+- **兼容性**：优先复用 OpenSSH 配置语义（Host/ProxyJump/IdentityFile），避免自定义格式导致迁移成本。
+- **可维护性**：尽量复用现有 wezterm-ssh 与 Lua 能力，避免新增平行实现。
+
 ## Why Kaku?
 
 I heavily rely on the CLI for both work and personal projects. Tools I've built, like [Mole](https://github.com/tw93/mole) and [Pake](https://github.com/tw93/pake), reflect this.
